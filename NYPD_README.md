@@ -14,3 +14,5 @@ I liked altair's visuals when working with it for the Intro to Data Visualizatio
 Despite what looks like quite a few people pushing for native support in R, they haven't resolved some underlying issues that make this a bit more annoying than I thought it would be. 
 
 I advise you to knit to HTML, the altair plots will not knit into PDF for reasons I didn't figure out.
+
+I have added a knitted HTML file just in case.
