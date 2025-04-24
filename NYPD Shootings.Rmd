@@ -1,0 +1,132 @@
+---
+title: "NYPD Shootings"
+author: "V. Wingo"
+date: "2025-03-24"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(chron)
+library(tidyverse)
+library(vegawidget)
+library(reticulate)
+```
+# NYPD Shootings Data
+
+This presentation seeks to explore data collected by the NYPD regarding incidents of shootings in New York City.
+
+```{r get_data}
+nypd <- read.csv(file = "NYPD_Shooting_Incident_Data__Year_To_Date.csv")
+```
+
+There is a lot of data that could provide insights, but I'm not immediately interested in them, so I will remove some columns and clean up the date/time data to be more usable.
+
+```{r cleanup}
+nypd <- nypd %>% select(-c(INCIDENT_KEY, X_COORD_CD, Y_COORD_CD, Latitude, Longitude, 
+                           New.Georeferenced.Column, Borough.Boundaries, 
+                           Community.Districts, Zip.Codes, JURISDICTION_CODE, 
+                           Police.Precincts, City.Council.Districts)) %>%
+  mutate(OCCUR_DATE = mdy(OCCUR_DATE), OCCUR_TIME = chron(times=OCCUR_TIME))
+summary(nypd)
+```
+## Shootings by Month vs. Average Temperatures
+
+I would like to explore the common notion that "violence peaks when it gets hot", so I have also added the average high/low monthly temperatures for New York City from 2022 with the help of www.wunderground.com.
+
+```{r plot_setup}
+nypd_by_month <- nypd %>% group_by(month=month(OCCUR_DATE)) %>% count() 
+avg_high <- c(38, 45, 52, 59, 71, 79, 88, 87, 77, 64, 57, 44)
+avg_low <- c(25, 30, 37, 46, 56, 65, 73, 74, 64, 51, 46, 33)
+nypd_by_month$avg_high <- avg_high
+nypd_by_month$avg_low <- avg_low
+```
+
+```{python Altair}
+import altair as alt
+import pandas as pd
+
+base = alt.Chart(r.nypd_by_month).encode(x='month:O')
+
+bar = base.mark_bar().encode(y='n:Q')
+
+line1 =  base.mark_line(color='red').encode(
+    y='avg_high:Q'
+)
+
+line2 =  base.mark_line(color='blue').encode(
+    y='avg_low:Q'
+)
+
+chart1 = (bar + line1 + line2).properties(width=600)
+
+vw = chart1.to_json()
+```
+
+```{r display}
+as_vegaspec(py$vw)
+```
+
+Looking at the data this way, it may be reasonable to believe our assumption about violence increasing with temperatures is correct. I am not curious about how this might look on a day-to-day basis.
+
+## Shootings per Day vs Daily High Temperature
+
+After plotting the arguments for the entire year on a daily basis, the information is lost in the sheer size of the data. In the end, I chose to narrow it down to the month of July, usually one of the hotter months of the year. Note: I imported the data by hand, so I am hiding the code for brevity.
+
+```{r by_day, echo=FALSE}
+daily_highs <- c(57,36,48,61,65,66,93,79,86,62,67,44,60,43,52,53,57,82,89,93,78,62,71,45,39,48,47,46,59,75,88,91,82,53,67,58,35,54,38,53,66,80,86,93,89,58,71,45,48,28,45,55,71,76,87,92,86,59,75,47,43,31,68,52,62,81,84,93,75,76,73,59,36,39,74,56,52,77,81,92,73,78,77,59,32,47,47,64,58,84,83,94,77,59,58,55,42,44,40,55,68,83,83,97,81,63,53,45,42,55,49,49,71,79,81,85,85,69,67,39,26,55,53,59,74,75,83,90,77,72,68,40,42,59,47,70,70,73,89,84,80,70,69,38,45,42,24,69,65,85,90,79,83,70,61,41,43,27,56,70,74,83,90,82,80,68,46,40,20,31,66,68,78,80,85,82,74,69,47,43,40,47,63,69,74,71,83,83,77,66,50,46,46,63,55,50,78,91,84,82,73,67,47,44,38,63,72,52,73,76,88,87,84,58,44,40,50,41,66,50,67,73,92,89,86,54,40,38,47,35,60,59,67,79,96,90,78,59,38,40,23,53,61,57,91,77,97,82,81,64,42,41,30,55,56,67,90,67,94,81,77,66,51,46,38,68,47,60,72,74,97,87,64,62,55,58,38,35,47,59,64,82,97,90,71,62,53,15,43,43,59,57,69,90,89,89,77,66,55,28,29,37,53,57,69,90,82,88,76,73,57,29,32,48,45,59,77,78,86,87,70,65,60,35,34,36,31,56,77,79,87,79,70,57,56,47,30,37,61,78,85,87,86,66,59,43,50,27,47,65,85,88,88,88,63,64,59,60,30,63,92,87,84,65,54)
+
+empty_dates <- data.frame(OCCUR_DATE=c("2022-01-12", "2022-02-04", "2022-03-09", "2022-04-07", "2022-04-20", "2022-05-08", "2022-05-19", "2022-09-08", "2022-10-01", "2022-10-06", "2022-11-08", "2022-11-16", "2022-12-20"), n=c(0, 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), stringsAsFactors=FALSE) %>% mutate(OCCUR_DATE=as.Date(OCCUR_DATE))
+
+nypd_by_day <- nypd %>% group_by(OCCUR_DATE) %>% count() %>% rbind(empty_dates) %>% arrange(OCCUR_DATE) 
+nypd_by_day$daily_highs <- daily_highs
+
+nypd_july <- nypd_by_day %>% filter(OCCUR_DATE >= as.Date('2022-07-01') & OCCUR_DATE <= as.Date('2022-07-31')) %>% mutate(OCCUR_DATE = as.character(OCCUR_DATE))
+```
+
+```{python Altair_day}
+import altair as alt
+import pandas as pd
+
+base2 = alt.Chart(r.nypd_july).encode(x='OCCUR_DATE:O')
+
+bar2 = base2.mark_bar().encode(y='n:Q')
+
+line3 =  base2.mark_line(color='red').encode(
+    y=alt.Y('daily_highs:Q')
+)
+
+chart2 = (bar2 + line3).resolve_scale(y='independent').properties(width=600)
+
+dh = chart2.to_json()
+```
+
+```{r display_day}
+as_vegaspec(py$dh)
+```
+Looking at the data on a day-by-day level, it becomes a little less obvious that temperature has any tangible impact on gun-related violence in New York City. I'll try modelling the data anyway.
+
+## Predicting Number of Shootings by Daily High Temperatures
+
+```{r model}
+mod <- lm(n ~ daily_highs, data = nypd_by_day)
+summary(mod)
+nypd_by_day$pred = predict(mod, data = nypd_by_day)
+nypd_by_day %>% ggplot() +
+  geom_point(aes(x = daily_highs, y = n), color = "blue") +
+  geom_point(aes(x = daily_highs, y = pred), color="red")
+```
+
+Well, if daily high temperatures can predict shooting rates, it's certainly not linearly!
+
+## Bias
+With any data, the data chosen here can be biased by how it was reported. We do have no way of knowing if every incidence of shooting was reported, recorded, or noticed. There is quite a bit of missing data in the data set, which would make it difficult to explore other questions we might have. I chose to work with number of incidents versus temperatures to minimize bias. I had considered other variables, such as perpetrator/victim age or race, but I am aware that there are a lot of socioeconomic issues to also consider. 
+
+## Conclusion
+
+From the data shown here and by the methods available to me currently, I would not say that the common notion that hot weather causes more incidents of violence, particularly gun violence in New York City, to be true. If I revisited the question, I would do so with an expanded knowledge of modeling data and I would hope to have more data to use in those models.
