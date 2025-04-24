@@ -1,3 +1,5 @@
 This document is much simpler to run. It includes these basic R packages: tidyverse, dplyr, lubridate, ggplot2
 
 Suggest knitting to HTML but PDF should be readable.
+
+I have uploaded knitted HTML and PDF files in case there are issues.
