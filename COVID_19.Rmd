@@ -13,6 +13,9 @@ library(tidyverse)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+
+# !!! Available on GitHub at https://github.com/VLWingo/UCB_MS-DS/blob/4f9c59c660ce8f7d68d8ccea49795ce714c06c89/COVID_19.Rmd
+# !!! Please refer to Github repository for readme and pre-knitted files if needed.
 ```
 
 # COVID-19 Data for the US
