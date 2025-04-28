@@ -16,6 +16,9 @@ library(chron)
 library(tidyverse)
 library(vegawidget)
 library(reticulate)
+
+# !!!PLEASE READ THE README FOR REPRODUCIBILITY. THIS FILE CONTAINS LIBRARIES AND FEATURES NOT DISCUSSED IN THE COURSE. YOU MAY BE UNABLE TO RUN THIS FILE IF YOU DO NOT FOLLOW THE INSTRUCTIONS!!!
+# If you cannot get it to work, there is an html file available in the repository.
 ```
 # NYPD Shootings Data
 
